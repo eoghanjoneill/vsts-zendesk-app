@@ -103,7 +103,8 @@
                 "assignee": "Assignee",
                 "requester": "Requester",
                 "attachments": "Attachments",
-                "severity": "Severity"
+                "severity": "Severity",
+                "forCompany": "For Company"
             },
             "copyDescription": "Copy the ticket's description",
             "copyTemplate": "Use configured template"

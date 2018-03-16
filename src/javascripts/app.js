@@ -24,6 +24,7 @@ const wrapZafClient = async (client, apiPath, ...rest) => {
     try {
         let result, errors;
         // Use destructuring to get the value from path on result object
+        if(apiPath.indexOf('ticket') > -1) console.log(`apiPath: ${JSON.stringify(apiPath)}; rest: ${JSON.stringify(rest)}`);
         ({ [apiPath]: result, errors } = await client[method](apiPath, ...rest));
         if (errors && Object.keys(errors).length) {
             console.warn(`Some errors were encountered in request ${apiPath}`, errors);
@@ -145,7 +146,7 @@ const App = (function() {
                     url: helpers.fmt("/api/v2/tickets/%@/comments.json", ticket.id),
                     type: "GET",
                 };
-            },
+            },            
             addTagToTicket: async function(tag) {
                 const ticket = await wrapZafClient(this.zafClient, "ticket");
                 return {
@@ -206,8 +207,14 @@ const App = (function() {
             },
             getVsoProjectAreas: function(projectId) {
                 return this.vsoRequest(helpers.fmt("/%@/_apis/wit/classificationnodes/areas", projectId), {
-                    $depth: 9999,
+                    $depth: 1,//support team don't need to specify Area Path lower than application level
                 });
+            },
+            getVsoForCompany: function() {
+                //hard coded picklist ids:
+                //PalantirConfigScrumProcess.ForCompany: b5759ef3-c6a0-47c2-b458-eed48049bdf2
+                //TODO - ForCompany in production vsts account:
+                return this.vsoRequest("/_apis/work/processDefinitions/lists/b5759ef3-c6a0-47c2-b458-eed48049bdf2");
             },
             getVsoProjectWorkItemQueries: function(projectName) {
                 return this.vsoRequest(helpers.fmt("/%@/_apis/wit/queries", projectName), {
@@ -555,6 +562,13 @@ const App = (function() {
         // UI
         onNewWorkItemClick: async function() {
             assignVm({ temp: { ticket: await wrapZafClient(this.zafClient, "ticket") } });
+            try {
+                let customFieldValue = await wrapZafClient(this.zafClient, "ticket.customField", ["custom_field_360001305554"]);
+                console.log('for company = ' + customFieldValue);
+            }
+            catch (err) {
+                console.error(err);
+            }
             const modalClient = await this.createModal(this._context, "newWorkItemModal");
             modalClient.on("modal.close", () => {
                 this.onModalClosed();
@@ -570,6 +584,7 @@ const App = (function() {
                     function() {
                         this.drawAreasList($modal.find(".area"), projId);
                         this.drawTypesList($modal.find(".type"), projId);
+                        //this.drawCompaniesList($modal.find(".forCompany"), projId);
                         $modal.find(".type").change();
                         this.hideSpinnerInModal($modal);
                     }.bind(this),
@@ -753,6 +768,14 @@ const App = (function() {
             select.html(
                 this.renderTemplate("areas", {
                     areas: project.areas,
+                }),
+            );
+        },
+        drawCompaniesList: function(select, projectId) {
+            var project = this.getProjectById(projectId);
+            select.html(
+                this.renderTemplate("companies", {
+                    companies: project.companies,
                 }),
             );
         },
@@ -942,7 +965,7 @@ const App = (function() {
             return _.some(workItemType.fieldInstances, function(fieldInstance) {
                 return fieldInstance.referenceName === fieldRefName;
             });
-        },
+        },        
         linkTicket: async function(workItemId) {
             var linkVsoTag = TAG_PREFIX + workItemId;
             await this.zafClient.invoke("ticket.tags.add", linkVsoTag);
@@ -984,11 +1007,20 @@ const App = (function() {
                 });
             }
 
+            //TODO: hard-code to Support Incident wit
             var loadWorkItemTypes = this.ajax("getVsoProjectWorkItemTypes", project.id).then(
                 function(data) {
                     project.workItemTypes = this.restrictToAllowedWorkItems(data.value);
                 }.bind(this),
-            );
+            );            
+
+            var loadCompanyPicklist = this.ajax("getVsoForCompany").then(
+                function(data) {
+                    console.log("Company pick list: " + JSON.stringify(data));
+                    project.companies = data.items;
+                }.bind(this),
+            ).error((err) => console.log("error getting company list from vsts: " + err));
+
             var loadAreas = this.ajax("getVsoProjectAreas", project.id).then(
                 function(rootArea) {
                     var areas = []; // Flatten areas to format \Area 1\Area 1.1
@@ -1014,7 +1046,7 @@ const App = (function() {
                     });
                 }.bind(this),
             );
-            return this.when(loadWorkItemTypes, loadAreas).then(function() {
+            return this.when(loadWorkItemTypes, loadAreas).then(function() {//TODO - add loadCompanyPicklist
                 project.metadataLoaded = true;
             });
         },

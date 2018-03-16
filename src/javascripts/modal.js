@@ -648,6 +648,26 @@ const ModalApp = BaseApp.extend({
             operations.push(this.buildPatchToAddWorkItemField("System.Tags", this.setting("vso_tag")));
         }
 
+        //eoghan
+        if (this.hasFieldDefined(workItemType, "PalantirConfigScrumProcess.ForCompany")) {
+            const forCompanyVal = $modal.find(".forCompany").val();
+            operations.push(this.buildPatchToAddWorkItemField("PalantirConfigScrumProcess.ForCompany", forCompanyVal));
+        }
+
+        /*
+        let forCompanyField = this.getFieldThatIncludes(workItemType, "ForCompany");
+        
+        if(forCompanyField) {
+            console.log(`For Company field reference: ${forCompanyField.referenceName}`);
+            //For Company from zendesk:
+            console.log('All custom: ' + JSON.stringify(ticket.custom_fields));
+            // read For Company
+            const forCompanyVal = $modal.find(".forCompany").val(); //check work item type
+            //let forCompanyVal = _.find(ticket.custom_fields, function(fld) { fld.id == 360001305554});
+            console.log(`Company value from zendesk: ${forCompanyVal}`);
+            operations.push(this.buildPatchToAddWorkItemField(forCompanyField.referenceName, forCompanyVal));
+        }*/
+
         //Add hyperlink to ticket url
         operations.push(
             this.buildPatchToAddWorkItemHyperlink(await this.buildTicketLinkUrl(), VSO_ZENDESK_LINK_TO_TICKET_PREFIX + ticket.id),
@@ -819,6 +839,7 @@ const ModalApp = BaseApp.extend({
                 function() {
                     this.drawAreasList($modal.find(".area"), projId);
                     this.drawTypesList($modal.find(".type"), projId);
+                    //this.drawCompaniesList($modal.find(".type"), projId);
                     $modal.find(".type").change();
                     this.hideBusy();
                 }.bind(this),
@@ -914,6 +935,11 @@ const ModalApp = BaseApp.extend({
             return fieldInstance.referenceName === fieldRefName;
         });
     },
+    getFieldThatIncludes: function(workItemType, fieldRefNamePart) {
+        return _.find(workItemType.fieldInstances, function(fieldInstance) {
+            return fieldInstance.referenceName.toLowerCase().indexOf(fieldRefNamePart.toLowerCase()) > -1;
+        });
+    },
     drawTypesList: function(select, projectId) {
         var [project, done] = this.getProjectById(projectId);
         select.html(
@@ -931,6 +957,14 @@ const ModalApp = BaseApp.extend({
             }),
         );
         done();
+    },
+    drawCompaniesList: function(select, projectId) {
+        var [project, done] = this.getProjectById(projectId);
+        select.html(
+            this.renderTemplate("companies", {
+                companies: project.companies,
+            }),
+        );
     },
     showErrorInModal: function($modal, err) {
         if ($modal.find(".modal-body .errors")) {
