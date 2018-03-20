@@ -199,6 +199,7 @@ const ModalApp = BaseApp.extend({
         }
     },
     execQueryOnSidebar: async function(taskName) {
+        console.debug("*** modal.js -> execQueryOnSidebar. taskName: " + taskName);
         this.showBusy();
         setMessageArg(taskName);
         this._parentClient.trigger("execute.query");
@@ -207,6 +208,8 @@ const ModalApp = BaseApp.extend({
             response = await new Promise((resolve, reject) => {
                 this._nextSidebarQueryResponseResolver = { resolve, reject };
             });
+        } catch (err) {
+          console.debug("*** Error in modal.js -> execQueryOnSidebar: " + err);
         } finally {
             this.hideBusy();
         }
@@ -837,9 +840,12 @@ const ModalApp = BaseApp.extend({
         this.loadProjectMetadata(projId)
             .then(
                 function() {
+                    console.debug("***modal.js->onNewVsoProjectChange - before call drawAreasList");
                     this.drawAreasList($modal.find(".area"), projId);
+                    console.debug("***modal.js->onNewVsoProjectChange - before call drawTypesList");
                     this.drawTypesList($modal.find(".type"), projId);
-                    //this.drawCompaniesList($modal.find(".type"), projId);
+                    console.debug("***modal.js->onNewVsoProjectChange - before call drawCompaniesList");
+                    this.drawCompaniesList($modal.find(".type"), projId);
                     $modal.find(".type").change();
                     this.hideBusy();
                 }.bind(this),
@@ -863,15 +869,18 @@ const ModalApp = BaseApp.extend({
         );
     },
     loadProjectMetadata: async function(projectId) {
+        console.debug("*** called loadProjectMetadata on modal.js - Eoghan");
         var [project, done] = this.getProjectById(projectId);
 
         if (project.metadataLoaded === true) {
             return;
         }
 
+        console.debug("*** called loadProjectMetadata on modal.js - before get Work Item Data");
         const workItemData = await this.execQueryOnSidebar(["ajax", "getVsoProjectWorkItemTypes", project.id]);
         project.workItemTypes = this.restrictToAllowedWorkItems(workItemData.value);
 
+        console.debug("*** called loadProjectMetadata on modal.js - before get Area Data");
         const areaData = await this.execQueryOnSidebar(["ajax", "getVsoProjectAreas", project.id]);
         var areas = []; // Flatten areas to format \Area 1\Area 1.1
 
@@ -894,6 +903,11 @@ const ModalApp = BaseApp.extend({
         project.areas = _.sortBy(areas, function(area) {
             return area.name;
         });
+
+        console.debug("*** called loadProjectMetadata on modal.js - before get Companies");
+        const vsoCompanies = await this.execQueryOnSidebar(["ajax", "getVsoCompanies"]);
+        console.log("***modal.js -> loadProjectMetadata -> result of getVsoCompanies: " + JSON.stringify(vsoCompanies));
+        project.companies = vsoCompanies.items;
 
         project.metadataLoaded = true;
         done(); // set project back to localstorage
@@ -950,6 +964,7 @@ const ModalApp = BaseApp.extend({
         done();
     },
     drawAreasList: function(select, projectId) {
+        console.debug("***called drawAreasList on modal.js");
         var [project, done] = this.getProjectById(projectId);
         select.html(
             this.renderTemplate("areas", {
@@ -982,6 +997,7 @@ const ModalApp = BaseApp.extend({
         }
     },
     restrictToAllowedWorkItems: function(wits) {
+        console.debug("***called restrictToAllowedWorkItems in modal.js ");
         return _.filter(wits, function(wit) {
             return _.contains(VSO_WI_TYPES_WHITE_LISTS, wit.name);
         });
@@ -1025,7 +1041,7 @@ const ModalApp = BaseApp.extend({
         }
 
         var detail = this.I18n.t("errorServer").fmt(jqXHR.status, jqXHR.statusText, serverErrMsg);
-        return errMsg + " " + detail;
+        return "Error in modal.js: " + errMsg + " " + detail;
     },
     events: {
         "app.activated": "onAppActivated",

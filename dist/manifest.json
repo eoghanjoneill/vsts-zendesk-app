@@ -17,7 +17,8 @@
     {
       "name": "vso_account",
       "type": "text",
-      "required": true
+      "required": true,
+      "default": "palantirsolutionstest"
     },
     {
       "name": "vso_tag",

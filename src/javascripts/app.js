@@ -80,7 +80,7 @@ const getVm = function(path) {
 const App = (function() {
     "use strict"; //#region Constants
 
-    var INSTALLATION_ID = 0,
+    var INSTALLATION_ID = 360000179573,
         //For dev purposes, when using Zat, set this to your current installation id
         VSO_URL_FORMAT = "https://%@.visualstudio.com/DefaultCollection",
         VSO_API_DEFAULT_VERSION = "1.0",
@@ -114,7 +114,9 @@ const App = (function() {
             "app.activated": "onAppActivated",
             // Requests
             "getVsoProjects.done": "onGetVsoProjectsDone",
+            "getVsoCompanies.done": "onGetVsoCompaniesDone",
             "getVsoFields.done": "onGetVsoFieldsDone",
+
             //New workitem dialog
             "click .newWorkItem": "onNewWorkItemClick",
             //Admin side pane
@@ -210,7 +212,8 @@ const App = (function() {
                     $depth: 1,//support team don't need to specify Area Path lower than application level
                 });
             },
-            getVsoForCompany: function() {
+            getVsoCompanies: function() {
+                console.debug("*** called app.js -> getVsoCompanies")
                 //hard coded picklist ids:
                 //PalantirConfigScrumProcess.ForCompany: b5759ef3-c6a0-47c2-b458-eed48049bdf2
                 //TODO - ForCompany in production vsts account:
@@ -377,6 +380,9 @@ const App = (function() {
                     },
                 ),
             });
+        },
+        onGetVsoCompaniesDone: function(companies) {
+            //eoghan - todo?
         },
         onGetVsoFieldsDone: function(data) {
             assignVm({
@@ -584,7 +590,7 @@ const App = (function() {
                     function() {
                         this.drawAreasList($modal.find(".area"), projId);
                         this.drawTypesList($modal.find(".type"), projId);
-                        //this.drawCompaniesList($modal.find(".forCompany"), projId);
+                        this.drawCompaniesList($modal.find(".forCompany"), projId);
                         $modal.find(".type").change();
                         this.hideSpinnerInModal($modal);
                     }.bind(this),
@@ -764,6 +770,7 @@ const App = (function() {
             );
         },
         drawAreasList: function(select, projectId) {
+            console.debug("***called drawAreasList on app.js");
             var project = this.getProjectById(projectId);
             select.html(
                 this.renderTemplate("areas", {
@@ -999,6 +1006,7 @@ const App = (function() {
             return _.contains(await this.getLinkedWorkItemIds(), id);
         },
         loadProjectMetadata: function(projectId) {
+            console.debug("*** called loadProjectMetadata on app.js");
             var project = this.getProjectById(projectId);
 
             if (project.metadataLoaded === true) {
@@ -1014,11 +1022,14 @@ const App = (function() {
                 }.bind(this),
             );            
 
-            var loadCompanyPicklist = this.ajax("getVsoForCompany").then(
-                function(data) {
+            var loadCompanyPicklist = this.ajax("getVsoCompanies").then(
+                (data) => {
                     console.log("Company pick list: " + JSON.stringify(data));
                     project.companies = data.items;
-                }.bind(this),
+                },
+                (reason) => {
+                    console.log("Failed to get company picklist: " + reason);
+                }
             ).error((err) => console.log("error getting company list from vsts: " + err));
 
             var loadAreas = this.ajax("getVsoProjectAreas", project.id).then(
@@ -1046,7 +1057,7 @@ const App = (function() {
                     });
                 }.bind(this),
             );
-            return this.when(loadWorkItemTypes, loadAreas).then(function() {//TODO - add loadCompanyPicklist
+            return this.when(loadWorkItemTypes, loadAreas, loadCompanyPicklist).then(function() {//TODO - add loadCompanyPicklist
                 project.metadataLoaded = true;
             });
         },
@@ -1066,6 +1077,7 @@ const App = (function() {
             );
         },
         restrictToAllowedWorkItems: function(wits) {
+            console.debug("***called restrictToAllowedWorkItems in app.js ");
             return _.filter(wits, function(wit) {
                 return _.contains(VSO_WI_TYPES_WHITE_LISTS, wit.name);
             });
@@ -1124,7 +1136,7 @@ const App = (function() {
             }
 
             var detail = this.I18n.t("errorServer").fmt(jqXHR.status, jqXHR.statusText, serverErrMsg);
-            return errMsg + " " + detail;
+            return "Error in app.js: " + errMsg + " " + detail;
         },
         buildPatchToAddWorkItemAttachments: async function(attachments) {
             const _ticket7 = await wrapZafClient(this.zafClient, "ticket");
