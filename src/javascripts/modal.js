@@ -134,7 +134,7 @@ var INSTALLATION_ID = 0,
     }),
     VSO_ZENDESK_LINK_TO_TICKET_PREFIX = "ZendeskLinkTo_Ticket_",
     VSO_ZENDESK_LINK_TO_TICKET_ATTACHMENT_PREFIX = "ZendeskLinkTo_Attachment_Ticket_",
-    VSO_WI_TYPES_WHITE_LISTS = ["Bug", "Product Backlog Item", "User Story", "Requirement", "Issue", "Support Incident"],
+    VSO_WI_TYPES_WHITE_LISTS = ["Support Incident"], //"Bug", "Product Backlog Item", "User Story", "Requirement", "Issue", 
     VSO_PROJECTS_PAGE_SIZE = 100; //#endregion
 
 // Create a new ZAFClient
@@ -845,7 +845,7 @@ const ModalApp = BaseApp.extend({
                     console.debug("***modal.js->onNewVsoProjectChange - before call drawTypesList");
                     this.drawTypesList($modal.find(".type"), projId);
                     console.debug("***modal.js->onNewVsoProjectChange - before call drawCompaniesList");
-                    this.drawCompaniesList($modal.find(".type"), projId);
+                    this.drawCompaniesList($modal.find(".forCompany"), projId);
                     $modal.find(".type").change();
                     this.hideBusy();
                 }.bind(this),
@@ -955,6 +955,7 @@ const ModalApp = BaseApp.extend({
         });
     },
     drawTypesList: function(select, projectId) {
+        console.debug("***called drawTypesList on modal.js");
         var [project, done] = this.getProjectById(projectId);
         select.html(
             this.renderTemplate("types", {
@@ -974,12 +975,14 @@ const ModalApp = BaseApp.extend({
         done();
     },
     drawCompaniesList: function(select, projectId) {
+        console.debug(`***called drawCompaniesList on modal.js; select: ${select}`);
         var [project, done] = this.getProjectById(projectId);
         select.html(
             this.renderTemplate("companies", {
                 companies: project.companies,
             }),
         );
+        done();
     },
     showErrorInModal: function($modal, err) {
         if ($modal.find(".modal-body .errors")) {

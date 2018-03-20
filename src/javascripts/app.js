@@ -84,7 +84,7 @@ const App = (function() {
         //For dev purposes, when using Zat, set this to your current installation id
         VSO_URL_FORMAT = "https://%@.visualstudio.com/DefaultCollection",
         VSO_API_DEFAULT_VERSION = "1.0",
-        VSO_API_RESOURCE_VERSION = {},
+        VSO_API_RESOURCE_VERSION = {"work": "4.1-preview"},
         TAG_PREFIX = "vso_wi_",
         DEFAULT_FIELD_SETTINGS = JSON.stringify({
             "System.WorkItemType": {
@@ -102,7 +102,7 @@ const App = (function() {
         }),
         VSO_ZENDESK_LINK_TO_TICKET_PREFIX = "ZendeskLinkTo_Ticket_",
         VSO_ZENDESK_LINK_TO_TICKET_ATTACHMENT_PREFIX = "ZendeskLinkTo_Attachment_Ticket_",
-        VSO_WI_TYPES_WHITE_LISTS = ["Bug", "Product Backlog Item", "User Story", "Requirement", "Issue", "Support Incident"],
+        VSO_WI_TYPES_WHITE_LISTS = ["Support Incident"],//"Bug", "Product Backlog Item", "User Story", "Requirement", "Issue", 
         VSO_PROJECTS_PAGE_SIZE = 100; //#endregion
 
     return {
@@ -913,6 +913,7 @@ const App = (function() {
         },
         getVsoResourceVersion: function(url) {
             var resource = url.split("/_apis/")[1].split("/")[0];
+            console.log("***getVsoResourceVersion, resource="+ resource);
             return VSO_API_RESOURCE_VERSION[resource] || VSO_API_DEFAULT_VERSION;
         },
         attachRestrictedFieldsToWorkItem: function(workItem, type) {

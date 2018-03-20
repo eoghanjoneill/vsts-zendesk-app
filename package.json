@@ -52,7 +52,9 @@
   },
   "scripts": {
     "build": "webpack -p",
-    "watch": "webpack --watch"
+    "watch": "webpack --watch",
+    "build-dev": "webpack -d --config webpack.config.dev.js"    
   },
-  "version": "0.6.0"
+  "version": "0.6.0",
+  "dependencies": {}
 }
