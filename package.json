@@ -38,21 +38,23 @@
     "url-loader": "^0.5.9",
     "webpack": "^3.5.1"
   },
-  "homepage": "https://github.com/Microsoft/vsts-zendesk-app",
+  "homepage": "https://github.com/eoghanjoneill/vsts-zendesk-app",
   "keywords": [
     "microsoft",
     "tfs",
     "vsts",
     "zendesk"
   ],
-  "name": "vsts-zendesk-app",
+  "name": "vsts-zendesk-app-modified",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Microsoft/vsts-zendesk-app"
+    "url": "https://github.com/eoghanjoneill/vsts-zendesk-app"
   },
   "scripts": {
     "build": "webpack -p",
-    "watch": "webpack --watch"
+    "watch": "webpack --watch",
+    "build-dev": "webpack -d --config webpack.config.dev.js"    
   },
-  "version": "0.6.0"
+  "version": "0.6.0",
+  "dependencies": {}
 }

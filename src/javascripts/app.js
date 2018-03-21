@@ -23,7 +23,7 @@ const wrapZafClient = async (client, apiPath, ...rest) => {
     }
     try {
         let result, errors;
-        // Use destructuring to get the value from path on result object
+        // Use destructuring to get the value from path on result object        
         ({ [apiPath]: result, errors } = await client[method](apiPath, ...rest));
         if (errors && Object.keys(errors).length) {
             console.warn(`Some errors were encountered in request ${apiPath}`, errors);
@@ -83,7 +83,7 @@ const App = (function() {
         //For dev purposes, when using Zat, set this to your current installation id
         VSO_URL_FORMAT = "https://%@.visualstudio.com/DefaultCollection",
         VSO_API_DEFAULT_VERSION = "1.0",
-        VSO_API_RESOURCE_VERSION = {},
+        VSO_API_RESOURCE_VERSION = {"work": "4.1-preview"},
         TAG_PREFIX = "vso_wi_",
         DEFAULT_FIELD_SETTINGS = JSON.stringify({
             "System.WorkItemType": {
@@ -101,7 +101,7 @@ const App = (function() {
         }),
         VSO_ZENDESK_LINK_TO_TICKET_PREFIX = "ZendeskLinkTo_Ticket_",
         VSO_ZENDESK_LINK_TO_TICKET_ATTACHMENT_PREFIX = "ZendeskLinkTo_Attachment_Ticket_",
-        VSO_WI_TYPES_WHITE_LISTS = ["Bug", "Product Backlog Item", "User Story", "Requirement", "Issue"],
+        VSO_WI_TYPES_WHITE_LISTS = ["Support Incident"],//"Bug", "Product Backlog Item", "User Story", "Requirement", "Issue", 
         VSO_PROJECTS_PAGE_SIZE = 100; //#endregion
 
     return {
@@ -113,7 +113,9 @@ const App = (function() {
             "app.activated": "onAppActivated",
             // Requests
             "getVsoProjects.done": "onGetVsoProjectsDone",
+            "getVsoCompanies.done": "onGetVsoCompaniesDone",
             "getVsoFields.done": "onGetVsoFieldsDone",
+
             //New workitem dialog
             "click .newWorkItem": "onNewWorkItemClick",
             //Admin side pane
@@ -145,7 +147,7 @@ const App = (function() {
                     url: helpers.fmt("/api/v2/tickets/%@/comments.json", ticket.id),
                     type: "GET",
                 };
-            },
+            },            
             addTagToTicket: async function(tag) {
                 const ticket = await wrapZafClient(this.zafClient, "ticket");
                 return {
@@ -206,8 +208,12 @@ const App = (function() {
             },
             getVsoProjectAreas: function(projectId) {
                 return this.vsoRequest(helpers.fmt("/%@/_apis/wit/classificationnodes/areas", projectId), {
-                    $depth: 9999,
+                    $depth: 1,//support team don't need to specify Area Path lower than application level
                 });
+            },
+            getVsoCompanies: function() {
+                // https://docs.microsoft.com/en-us/rest/api/vsts/processdefinitions/lists/list
+                return this.vsoRequest(`/_apis/work/processDefinitions/lists/${this.setting("vso_company_list_id")}`);
             },
             getVsoProjectWorkItemQueries: function(projectName) {
                 return this.vsoRequest(helpers.fmt("/%@/_apis/wit/queries", projectName), {
@@ -329,7 +335,6 @@ const App = (function() {
         },
 
         execQueryOnModal: async function(taskName) {
-            console.log(`Executing ${taskName} on modal.`);
             setMessageArg(taskName);
             this._currentModalClient.trigger("execute.query");
             const response = await new Promise(resolve => {
@@ -339,7 +344,6 @@ const App = (function() {
         },
 
         execActionOnModal: function(actionName) {
-            console.log(`Executing ${actionName} action on modal.`);
             setMessageArg(actionName);
             this._currentModalClient.trigger("execute.action");
         },
@@ -370,6 +374,9 @@ const App = (function() {
                     },
                 ),
             });
+        },
+        onGetVsoCompaniesDone: function(companies) {
+            //eoghan - todo?
         },
         onGetVsoFieldsDone: function(data) {
             assignVm({
@@ -555,6 +562,12 @@ const App = (function() {
         // UI
         onNewWorkItemClick: async function() {
             assignVm({ temp: { ticket: await wrapZafClient(this.zafClient, "ticket") } });
+            /*try {
+                let customFieldValue = await wrapZafClient(this.zafClient, "ticket.customField", ["custom_field_360001305554"]);                
+            }
+            catch (err) {
+                console.error(err);
+            }*/
             const modalClient = await this.createModal(this._context, "newWorkItemModal");
             modalClient.on("modal.close", () => {
                 this.onModalClosed();
@@ -570,6 +583,7 @@ const App = (function() {
                     function() {
                         this.drawAreasList($modal.find(".area"), projId);
                         this.drawTypesList($modal.find(".type"), projId);
+                        this.drawCompaniesList($modal.find(".forCompany"), projId);
                         $modal.find(".type").change();
                         this.hideSpinnerInModal($modal);
                     }.bind(this),
@@ -753,6 +767,14 @@ const App = (function() {
             select.html(
                 this.renderTemplate("areas", {
                     areas: project.areas,
+                }),
+            );
+        },
+        drawCompaniesList: function(select, projectId) {
+            var project = this.getProjectById(projectId);
+            select.html(
+                this.renderTemplate("companies", {
+                    companies: project.companies,
                 }),
             );
         },
@@ -942,7 +964,7 @@ const App = (function() {
             return _.some(workItemType.fieldInstances, function(fieldInstance) {
                 return fieldInstance.referenceName === fieldRefName;
             });
-        },
+        },        
         linkTicket: async function(workItemId) {
             var linkVsoTag = TAG_PREFIX + workItemId;
             await this.zafClient.invoke("ticket.tags.add", linkVsoTag);
@@ -984,11 +1006,22 @@ const App = (function() {
                 });
             }
 
+            //TODO: hard-code to Support Incident wit
             var loadWorkItemTypes = this.ajax("getVsoProjectWorkItemTypes", project.id).then(
                 function(data) {
                     project.workItemTypes = this.restrictToAllowedWorkItems(data.value);
                 }.bind(this),
-            );
+            );            
+
+            var loadCompanyPicklist = this.ajax("getVsoCompanies").then(
+                (data) => {
+                    project.companies = data.items;
+                },
+                (reason) => {
+                    console.log("Failed to get company picklist: " + reason);
+                }
+            ).error((err) => console.log("error getting company list from vsts: " + err));
+
             var loadAreas = this.ajax("getVsoProjectAreas", project.id).then(
                 function(rootArea) {
                     var areas = []; // Flatten areas to format \Area 1\Area 1.1
@@ -1014,7 +1047,7 @@ const App = (function() {
                     });
                 }.bind(this),
             );
-            return this.when(loadWorkItemTypes, loadAreas).then(function() {
+            return this.when(loadWorkItemTypes, loadAreas, loadCompanyPicklist).then(function() {//TODO - add loadCompanyPicklist
                 project.metadataLoaded = true;
             });
         },
@@ -1092,7 +1125,7 @@ const App = (function() {
             }
 
             var detail = this.I18n.t("errorServer").fmt(jqXHR.status, jqXHR.statusText, serverErrMsg);
-            return errMsg + " " + detail;
+            return "Error in app.js: " + errMsg + " " + detail;
         },
         buildPatchToAddWorkItemAttachments: async function(attachments) {
             const _ticket7 = await wrapZafClient(this.zafClient, "ticket");
