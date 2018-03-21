@@ -162,12 +162,10 @@ const ModalApp = BaseApp.extend({
         parentClient.trigger("registered.done");
 
         this.zafClient.on("load_template", data => {
-            console.log("loading template: " + data);
             this.switchTo(data);
         });
         this.zafClient.on("execute.action", () => {
             let args = getMessageArg();
-            console.log("executing: " + JSON.stringify(args));
             if (typeof args === "string") {
                 args = [args];
             }
@@ -199,7 +197,6 @@ const ModalApp = BaseApp.extend({
         }
     },
     execQueryOnSidebar: async function(taskName) {
-        console.debug("*** modal.js -> execQueryOnSidebar. taskName: " + taskName);
         this.showBusy();
         setMessageArg(taskName);
         this._parentClient.trigger("execute.query");
@@ -652,9 +649,9 @@ const ModalApp = BaseApp.extend({
         }
 
         //eoghan
-        if (this.hasFieldDefined(workItemType, "PalantirConfigScrumProcess.ForCompany")) {
+        if (this.hasFieldDefined(workItemType, this.setting("vso_company_var_name"))) {
             const forCompanyVal = $modal.find(".forCompany").val();
-            operations.push(this.buildPatchToAddWorkItemField("PalantirConfigScrumProcess.ForCompany", forCompanyVal));
+            operations.push(this.buildPatchToAddWorkItemField(this.setting("vso_company_var_name"), forCompanyVal));
         }
 
         /*
@@ -840,11 +837,8 @@ const ModalApp = BaseApp.extend({
         this.loadProjectMetadata(projId)
             .then(
                 function() {
-                    console.debug("***modal.js->onNewVsoProjectChange - before call drawAreasList");
                     this.drawAreasList($modal.find(".area"), projId);
-                    console.debug("***modal.js->onNewVsoProjectChange - before call drawTypesList");
                     this.drawTypesList($modal.find(".type"), projId);
-                    console.debug("***modal.js->onNewVsoProjectChange - before call drawCompaniesList");
                     this.drawCompaniesList($modal.find(".forCompany"), projId);
                     $modal.find(".type").change();
                     this.hideBusy();
@@ -869,18 +863,15 @@ const ModalApp = BaseApp.extend({
         );
     },
     loadProjectMetadata: async function(projectId) {
-        console.debug("*** called loadProjectMetadata on modal.js - Eoghan");
         var [project, done] = this.getProjectById(projectId);
 
         if (project.metadataLoaded === true) {
             return;
         }
 
-        console.debug("*** called loadProjectMetadata on modal.js - before get Work Item Data");
         const workItemData = await this.execQueryOnSidebar(["ajax", "getVsoProjectWorkItemTypes", project.id]);
         project.workItemTypes = this.restrictToAllowedWorkItems(workItemData.value);
 
-        console.debug("*** called loadProjectMetadata on modal.js - before get Area Data");
         const areaData = await this.execQueryOnSidebar(["ajax", "getVsoProjectAreas", project.id]);
         var areas = []; // Flatten areas to format \Area 1\Area 1.1
 
@@ -904,9 +895,7 @@ const ModalApp = BaseApp.extend({
             return area.name;
         });
 
-        console.debug("*** called loadProjectMetadata on modal.js - before get Companies");
         const vsoCompanies = await this.execQueryOnSidebar(["ajax", "getVsoCompanies"]);
-        console.log("***modal.js -> loadProjectMetadata -> result of getVsoCompanies: " + JSON.stringify(vsoCompanies));
         project.companies = vsoCompanies.items;
 
         project.metadataLoaded = true;
@@ -955,7 +944,6 @@ const ModalApp = BaseApp.extend({
         });
     },
     drawTypesList: function(select, projectId) {
-        console.debug("***called drawTypesList on modal.js");
         var [project, done] = this.getProjectById(projectId);
         select.html(
             this.renderTemplate("types", {
@@ -965,7 +953,6 @@ const ModalApp = BaseApp.extend({
         done();
     },
     drawAreasList: function(select, projectId) {
-        console.debug("***called drawAreasList on modal.js");
         var [project, done] = this.getProjectById(projectId);
         select.html(
             this.renderTemplate("areas", {
@@ -975,7 +962,6 @@ const ModalApp = BaseApp.extend({
         done();
     },
     drawCompaniesList: function(select, projectId) {
-        console.debug(`***called drawCompaniesList on modal.js; select: ${select}`);
         var [project, done] = this.getProjectById(projectId);
         select.html(
             this.renderTemplate("companies", {
@@ -1000,7 +986,6 @@ const ModalApp = BaseApp.extend({
         }
     },
     restrictToAllowedWorkItems: function(wits) {
-        console.debug("***called restrictToAllowedWorkItems in modal.js ");
         return _.filter(wits, function(wit) {
             return _.contains(VSO_WI_TYPES_WHITE_LISTS, wit.name);
         });

@@ -18,7 +18,19 @@
       "name": "vso_account",
       "type": "text",
       "required": true,
-      "default": "palantirsolutionstest"
+      "default": ""
+    },
+    {
+      "name": "vso_company_var_name",
+      "type": "text",
+      "required": true,
+      "default": "<process-name>.ForCompany"
+    },
+    {
+      "name": "vso_company_list_id",
+      "type": "text",
+      "required": true,
+      "default": "b5759ef3-c6a0-47c2-b458-eed48049bdf2"
     },
     {
       "name": "vso_tag",

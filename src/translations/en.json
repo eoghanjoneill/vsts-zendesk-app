@@ -7,6 +7,16 @@
                 "helpText":
                     "Enter your Visual Studio Team Services subdomain (part before visualstudio.com). Learn more by visiting http://go.microsoft.com/fwlink/?LinkID=396756"
             },
+            "vso_company_var_name": {
+                "label": "VSTS Company field Reference Name",
+                "helpText":
+                    "Enter the Reference Name for the Company variable in VSTS."
+            },
+            "vso_company_list_id": {
+                "label": "VSTS Company List Id",
+                "helpText":
+                    "Enter the ID for the company picklist in VSTS, see: https://docs.microsoft.com/en-us/rest/api/vsts/processdefinitions/lists/list"
+            },
             "vso_tag": {
                 "label": "Visual Studio Team Services work item tag",
                 "helpText":

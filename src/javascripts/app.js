@@ -23,8 +23,7 @@ const wrapZafClient = async (client, apiPath, ...rest) => {
     }
     try {
         let result, errors;
-        // Use destructuring to get the value from path on result object
-        if(apiPath.indexOf('ticket') > -1) console.log(`apiPath: ${JSON.stringify(apiPath)}; rest: ${JSON.stringify(rest)}`);
+        // Use destructuring to get the value from path on result object        
         ({ [apiPath]: result, errors } = await client[method](apiPath, ...rest));
         if (errors && Object.keys(errors).length) {
             console.warn(`Some errors were encountered in request ${apiPath}`, errors);
@@ -213,11 +212,8 @@ const App = (function() {
                 });
             },
             getVsoCompanies: function() {
-                console.debug("*** called app.js -> getVsoCompanies")
-                //hard coded picklist ids:
-                //PalantirConfigScrumProcess.ForCompany: b5759ef3-c6a0-47c2-b458-eed48049bdf2
-                //TODO - ForCompany in production vsts account:
-                return this.vsoRequest("/_apis/work/processDefinitions/lists/b5759ef3-c6a0-47c2-b458-eed48049bdf2");
+                // https://docs.microsoft.com/en-us/rest/api/vsts/processdefinitions/lists/list
+                return this.vsoRequest(`/_apis/work/processDefinitions/lists/${this.setting("vso_company_list_id")}`);
             },
             getVsoProjectWorkItemQueries: function(projectName) {
                 return this.vsoRequest(helpers.fmt("/%@/_apis/wit/queries", projectName), {
@@ -339,7 +335,6 @@ const App = (function() {
         },
 
         execQueryOnModal: async function(taskName) {
-            console.log(`Executing ${taskName} on modal.`);
             setMessageArg(taskName);
             this._currentModalClient.trigger("execute.query");
             const response = await new Promise(resolve => {
@@ -349,7 +344,6 @@ const App = (function() {
         },
 
         execActionOnModal: function(actionName) {
-            console.log(`Executing ${actionName} action on modal.`);
             setMessageArg(actionName);
             this._currentModalClient.trigger("execute.action");
         },
@@ -568,13 +562,12 @@ const App = (function() {
         // UI
         onNewWorkItemClick: async function() {
             assignVm({ temp: { ticket: await wrapZafClient(this.zafClient, "ticket") } });
-            try {
-                let customFieldValue = await wrapZafClient(this.zafClient, "ticket.customField", ["custom_field_360001305554"]);
-                console.log('for company = ' + customFieldValue);
+            /*try {
+                let customFieldValue = await wrapZafClient(this.zafClient, "ticket.customField", ["custom_field_360001305554"]);                
             }
             catch (err) {
                 console.error(err);
-            }
+            }*/
             const modalClient = await this.createModal(this._context, "newWorkItemModal");
             modalClient.on("modal.close", () => {
                 this.onModalClosed();
@@ -770,7 +763,6 @@ const App = (function() {
             );
         },
         drawAreasList: function(select, projectId) {
-            console.debug("***called drawAreasList on app.js");
             var project = this.getProjectById(projectId);
             select.html(
                 this.renderTemplate("areas", {
@@ -913,7 +905,6 @@ const App = (function() {
         },
         getVsoResourceVersion: function(url) {
             var resource = url.split("/_apis/")[1].split("/")[0];
-            console.log("***getVsoResourceVersion, resource="+ resource);
             return VSO_API_RESOURCE_VERSION[resource] || VSO_API_DEFAULT_VERSION;
         },
         attachRestrictedFieldsToWorkItem: function(workItem, type) {
@@ -1007,7 +998,6 @@ const App = (function() {
             return _.contains(await this.getLinkedWorkItemIds(), id);
         },
         loadProjectMetadata: function(projectId) {
-            console.debug("*** called loadProjectMetadata on app.js");
             var project = this.getProjectById(projectId);
 
             if (project.metadataLoaded === true) {
@@ -1025,7 +1015,6 @@ const App = (function() {
 
             var loadCompanyPicklist = this.ajax("getVsoCompanies").then(
                 (data) => {
-                    console.log("Company pick list: " + JSON.stringify(data));
                     project.companies = data.items;
                 },
                 (reason) => {
@@ -1078,7 +1067,6 @@ const App = (function() {
             );
         },
         restrictToAllowedWorkItems: function(wits) {
-            console.debug("***called restrictToAllowedWorkItems in app.js ");
             return _.filter(wits, function(wit) {
                 return _.contains(VSO_WI_TYPES_WHITE_LISTS, wit.name);
             });
