@@ -79,7 +79,7 @@ const getVm = function(path) {
 const App = (function() {
     "use strict"; //#region Constants
 
-    var INSTALLATION_ID = 360000179573,
+    var INSTALLATION_ID = 0,
         //For dev purposes, when using Zat, set this to your current installation id
         VSO_URL_FORMAT = "https://%@.visualstudio.com/DefaultCollection",
         VSO_API_DEFAULT_VERSION = "1.0",
