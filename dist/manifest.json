@@ -27,6 +27,12 @@
       "default": "<process-name>.ForCompany"
     },
     {
+      "name": "vso_externalId_var_name",
+      "type": "text",
+      "required": true,
+      "default": "<process-name>.ExternalId"
+    },
+    {
       "name": "vso_company_list_id",
       "type": "text",
       "required": true,

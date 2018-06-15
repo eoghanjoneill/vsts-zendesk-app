@@ -654,6 +654,10 @@ const ModalApp = BaseApp.extend({
             operations.push(this.buildPatchToAddWorkItemField(this.setting("vso_company_var_name"), forCompanyVal));
         }
 
+        if (this.hasFieldDefined(workItemType, this.setting("vso_externalId_var_name"))) {
+            operations.push(this.buildPatchToAddWorkItemField(this.setting("vso_externalId_var_name"), "zen #" + ticket.id));
+        }
+
         /*
         let forCompanyField = this.getFieldThatIncludes(workItemType, "ForCompany");
         
